@@ -11,12 +11,6 @@
 
 ---
 
-## Pipeline Overview
-
-![Pipeline](results/figures/pipeline_diagram.png)
-
----
-
 ## Background
 
 Hepatocellular Carcinoma (HCC) is the most dominant primary liver cancer (~90%), ranked 6th in worldwide prevalence and 5th in Indonesia (2022), with rising incidence and mortality rates. The Edmondson-Steiner 4-grade system classifies HCC severity based on histological differentiation, and has strong prognostic value. However, HCC exhibits high molecular heterogeneity — making molecular profiling essential for precision cancer medicine.
@@ -30,6 +24,12 @@ DNA methylation profiles in HCC correlate with prognosis and tumor progression. 
 1. **Classify** HCC tumor grades (G1, G2, G3) and normal tissue based on promoter DNA methylation data using the best supervised learning model
 2. **Identify** relevant methylated gene biomarkers (hypermethylated and hypomethylated) per tumor grade using SHAP-based explainable machine learning from the best model
 3. **Validate** the biological relevance of identified biomarker genes against cell migration, proliferation, and differentiation processes in HCC tumor grade progression via KEGG pathway analysis
+
+---
+
+## Pipeline Overview
+
+![Pipeline](results/figures/pipeline_diagram.png)
 
 ---
 
@@ -109,15 +109,14 @@ hcc-grade-ml-methylation/
 ├── environment.yml                         # Conda environment (R + Python)
 │
 ├── notebooks/                              # Jupyter notebooks (Python) — numbered by run order
-│   ├── 01_model_comparison_main.ipynb      # MAIN: All 5 models trained, evaluated, compared
+│   ├── 01_model_and_SHAP_main.ipynb        # MAIN: All 5 models trained, evaluated, compared and SHAP for Feature Importances
 │   ├── 02a_svm_development.ipynb           # SVM hyperparameter tuning
 │   ├── 02b_random_forest_development.ipynb # RF hyperparameter tuning
 │   ├── 02c_neural_network_development.ipynb# NN architecture & tuning
 │   ├── 03_performance_visualization.ipynb  # Confusion matrices, metric plots
-│   ├── 04_shap_biomarker_extraction.ipynb  # SHAP feature importance → biomarker selection
-│   ├── 05_biomarker_visualization.ipynb    # Heatmaps, biomarker methylation profiles
-│   ├── 06_go_enrichment_plot.ipynb         # GO enrichment visualization
-│   └── 07_clustering_visualization.ipynb   # PCA & clustering plots
+│   ├── 04_biomarker_visualization.ipynb    # Heatmaps, biomarker methylation profiles
+│   ├── 05_go_enrichment_plot.ipynb         # GO enrichment visualization
+│   └── 06_clustering_visualization.ipynb   # PCA & clustering plots
 │
 ├── scripts/
 │   ├── preprocessing/                      # R — QC, normalization, DMP analysis
