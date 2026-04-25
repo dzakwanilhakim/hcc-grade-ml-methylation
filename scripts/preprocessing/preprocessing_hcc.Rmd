@@ -1,0 +1,199 @@
+---
+title: "preprocessing_hcc"
+output: html_document
+date: "2024-01-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#0.Preparation
+```{r}
+library(RnBeads)
+dir <-  getwd()
+dataDir <- file.path(dir, "data")
+idatDir <- file.path(dataDir, "idat")
+sampleSheet <- file.path(dataDir, "samplesheet_final.csv")
+dataSource <- c(idatDir, sampleSheet)
+resultDir <- file.path(dir, "results")
+reportDir <- file.path(resultDir, "report")
+imageDir <- file.path(dir, "preprocessing_hcc.RData")
+save.rnb.set(rnb, path = dir, archive = FALSE)
+gc()
+```
+
+#0. COmputing management
+```{r}
+parallel.isEnabled()
+parallel.setup(2)
+parallel.isEnabled()
+#parallel.terdown()
+```
+
+
+
+#1.Import
+```{r}
+rnb <- rnb.execute.import(dataSource, data.type="infinium.idat.dir")
+save.image(imageDir)
+
+```
+#2. Filter NA
+```{r}
+
+# Identify rows with at least one NA value
+rows_with_na <- apply(Mval.filter, 1, function(row) any(is.na(row)))
+
+# Calculate the percentage of NA values in each row with at least one NA
+percent_na <- apply(Mval.filter[rows_with_na, ], 1, function(row) {
+  na_count <- sum(is.na(row))
+  total_columns <- length(row)
+  percent_na <- (na_count / total_columns) * 100
+  return(percent_na)
+})
+
+# Print the result
+print(percent_na)
+```
+
+
+
+#2.Filter
+```{r}
+rnb.filtering <- rnb
+cat("Initial Probes: " ,nrow(meth(rnb.filtering))) # the number of sites in the unfiltered object
+cat("Initial Sample: " ,ncol(meth(rnb.filtering)))
+#.p-Value (optional)
+#any.bad.p.val <- apply(dpval(rnb.set.unfiltered)>0.01, 1, any)
+#rnb.set.unfiltered <- remove.sites(rnb.set.unfiltered, any.bad.p.val)
+#nsites(rnb.set.unfiltered)
+
+# 2.1 Remove probes outside of CpG context
+rnb.filterCpG <- rnb.execute.context.removal(rnb.filtering)
+rnb.filtering <- rnb.filterCpG$dataset
+cat("CpG Probes: " ,nrow(meth(rnb.filtering))) # the number of CpG sites in the unfiltered object
+
+# 2.2 SNP filtering allowing no SNPs in the probe sequence
+rnb.filterSNP<- rnb.execute.snp.removal(rnb.filtering, snp="any")
+rnb.filtering <- rnb.filterSNP$dataset
+cat("nonSNP Probes: " ,nrow(meth(rnb.filtering))) 
+
+# 2.3 Remove CpGs on sex chromosomes
+rnb.filterSex <- rnb.execute.sex.removal(rnb.filtering)
+rnb.filtering <- rnb.filterSex$dataset
+cat("nonSex Chromosome: " ,nrow(meth(rnb.filtering))) 
+
+# 2.4 Remove probes and samples based on a greedy approach
+greedycut <- rnb.execute.greedycut(rnb.filtering)
+rnb.filtering <- remove.samples(rnb.filtering, greedycut$samples) #filter samples
+rnb.filtering <- remove.sites(rnb.filtering, greedycut$sites)
+cat("greedycut probes: " ,nrow(meth(rnb.filtering))) 
+
+# 2.5 Remove probes containing NA for beta values
+rnb.filterNA <- rnb.execute.na.removal(rnb.filtering, threshold = 0.1)
+rnb.filtering <- rnb.filterNA$dataset
+cat("nonNA Probes: " ,nrow(meth(rnb.filtering))) 
+
+# 2.6 Remove probes for which the beta values have low standard deviation
+rnb.filterSTD <- rnb.execute.variability.removal(rnb.filtering, 0.005)
+rnb.filtering <- rnb.filterSTD$dataset
+cat("nonVar Probes: " ,nrow(meth(rnb.filtering))) 
+
+# 2.7 Imputation
+#rnb.filtering <- rnb.execute.imputation(rnb.filtering,
+#                                           method = "knn",
+#                                           update.ff = TRUE)
+cat("Final Probes Count: " ,nrow(meth(rnb.filtering)))
+cat("Final Sample Count: " ,ncol(meth(rnb.filtering))) 
+save.image(imageDir2)
+```
+rnb.filtering <- rnb
+> cat("Initial Probes: " ,nrow(meth(rnb.filtering))) # the number of sites in the unfiltered object
+Initial Probes:  485577
+> cat("Initial Sample: " ,ncol(meth(rnb.filtering)))
+Initial Sample:  452
+> #.p-Value (optional)
+> #any.bad.p.val <- apply(dpval(rnb.set.unfiltered)>0.01, 1, any)
+> #rnb.set.unfiltered <- remove.sites(rnb.set.unfiltered, any.bad.p.val)
+> #nsites(rnb.set.unfiltered)
+> 
+> # 2.1 Remove probes outside of CpG context
+> rnb.filtering <- rnb.execute.context.removal(rnb.filtering)$dataset
+> cat("CpG Probes: " ,nrow(meth(rnb.filtering))) # the number of CpG sites in the unfiltered object
+CpG Probes:  482421
+> 
+> # 2.2 SNP filtering allowing no SNPs in the probe sequence
+> rnb.filtering <- rnb.execute.snp.removal(rnb.filtering, snp="any")$dataset
+> cat("nonSNP Probes: " ,nrow(meth(rnb.filtering))) 
+nonSNP Probes:  403331
+> 
+> # 2.3 Remove CpGs on sex chromosomes
+> rnb.filtering<- rnb.execute.sex.removal(rnb.filtering)$dataset
+> cat("nonSex Chromosome: " ,nrow(meth(rnb.filtering))) 
+nonSex Chromosome:  392643
+> 
+> # 2.4 Remove probes and samples based on a greedy approach
+> greedycut <- rnb.execute.greedycut(rnb.filtering)
+Warning: 'memory.size()' is no longer supported2024-01-08 10:09:02     Inf    INFO Working with a p-value threshold of 0.05
+Warning: 'memory.size()' is no longer supported2024-01-08 10:11:48     Inf  STATUS Calculated a total of 15242 iterations
+Warning: 'memory.size()' is no longer supported2024-01-08 10:11:48     Inf    INFO Optimal number of iterations is 15242
+> rnb.filtering <- remove.samples(rnb.filtering, greedycut$samples, verbose = TRUE) #filter samples
+Error in remove.samples(rnb.filtering, greedycut$samples, verbose = TRUE) : 
+  unused argument (verbose = TRUE)
+> cadangan <- rnb.filtering
+> rnb.filtering <- remove.samples(rnb.filtering, greedycut$samples) #filter samples
+> rnb.filtering <- remove.sites(rnb.filtering, greedycut$sites)
+> cat("greedycut probes: " ,nrow(meth(rnb.filtering))) 
+greedycut probes:  377407
+> 
+> # 2.5 Remove probes containing NA for beta values
+> rnb.filtering<- rnb.execute.na.removal(rnb.filtering, 
++                                            threshold = 0.1)$dataset
+> cat("nonNA Probes: " ,nrow(meth(rnb.filtering))) 
+nonNA Probes:  377403
+> 
+> # 2.6 Remove probes for which the beta values have low standard deviation
+> rnb.filtering <- rnb.execute.variability.removal(rnb.filtering, 0.005)$dataset
+> cat("nonVar Probes: " ,nrow(meth(rnb.filtering))) 
+nonVar Probes:  377403
+> 
+> # 2.7 Imputation
+> rnb.filtering <- rnb.execute.imputation(rnb.filtering,
++                                            method = "knn",
++                                            update.ff = TRUE)
+Warning: 'memory.size()' is no longer supported2024-01-08 12:27:59     Inf  STATUS STARTED Imputation procedure knn 
+Warning: 'memory.size()' is no longer supported2024-01-08 13:13:05     Inf  STATUS COMPLETED Imputation procedure knn 
+
+> cat("Final Probes Count: " ,nrow(meth(rnb.filtering)))
+Final Probes Count:  377403
+> cat("Final Sample Count: " ,ncol(meth(rnb.filtering))) 
+Final Sample Count:  447
+> save.image(imageDir)
+
+
+#3.Normalization
+```{r}
+rnb.norm <- rnb.filtering
+rnb.norm <- rnb.execute.normalization(rnb.norm, method="bmiq",
+                                      bgcorr.method="methylumi.noob")
+save.image(imageDir2)
+```
+
+#4.imputation
+```{r}
+# 2.7 Imputation
+rnb.norm.impute <- rnb.execute.imputation(rnb.norm, method = "knn", update.ff = TRUE)
+```
+#5. SVA
+```{r}
+svaObj <- rnb.execute.sva(rnb.norm.impute, cmp.cols="Sample_Group", numSVmethod="be")
+rnbs.sva <- set.covariates.sva(rnb.norm.impute, svaObj)
+get.covariates.sva(rnbs.sva, "Sample_Group")
+```
+
+#6. DMP
+```{r}
+dm.sva <- rnb.execute.computeDiffMeth(rnbs.sva, "Sample_Group")
+```
+

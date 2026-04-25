@@ -1,0 +1,113 @@
+---
+title: "findingDMP"
+output: html_document
+date: "2024-01-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#1. Preparation
+```{r}
+library(RnBeads.hg38)
+
+```
+
+#2. Annotarion
+```{r}
+# Annotation reference
+ann <- annotation(rnb.norm.impute, add.names=TRUE)
+ph <- pheno(rnb.norm.impute)
+beta <- meth(rnb.norm.impute)
+Mval <- mval(rnb.norm.impute)
+col <- ph$Sample_Name
+row <- ann$ID
+#CpG.GUI(row)
+
+# annotation
+colnames(beta) <- col
+rownames(beta) <- row
+colnames(Mval) <- col
+rownames(Mval) <- row
+save.image(imageDir)
+```
+
+#3. SVD
+```{r}
+#SVD for Mval
+#library(ChAMP)
+champ.SVD(beta=beta.combat.proj %>% as.data.frame(), pd=ph_na)
+```
+
+#4. Batch effect correction
+```{r}
+#combat for Mval
+combat_beta_project.id <- champ.runCombat(beta=beta,pd=ph,
+                                         variablename = "tumor_grade",
+                                         batchname=c("Project.ID"))
+
+```
+# b2m
+```{r}
+library(ENmix)
+combat_Mval_project.id <- B2M(combat_beta_project.id)
+```
+
+
+#5. DMP
+```{r}
+DMP.mval <- champ.DMP(beta = Mval,
+                 pheno = ph$tumor_grade,
+                 compare.group = NULL,
+                 adjPVal = 0.05,
+                 adjust.method = "BH",
+                 arraytype = "450K")
+```
+```{r}
+ph$tumor_grade_merge1<- gsub("/", "", ph$tumor_grade_merge1)
+```
+
+
+```{r}
+gc()
+DMP.mval.tg.merge <- champ.DMP(beta = Mval,
+                 pheno = ph$tumor_grade_merge1,
+                 compare.group = NULL,
+                 adjPVal = 0.05,
+                 adjust.method = "BH",
+                 arraytype = "450K")
+gc()
+
+DMP.mval.tg.merge2 <- champ.DMP(beta = Mval,
+                 pheno = ph$tumor_grade2,
+                 compare.group = NULL,
+                 adjPVal = 0.05,
+                 adjust.method = "BH",
+                 arraytype = "450K")
+gc()
+ph_ts <- ph[complete.cases(ph$pt_merge1), ]
+samplename_ts <- ph_ts$Sample_Name
+Mval_ts <- Mval[, colnames(Mval) %in% samplename_ts]
+DMP.mval.ts <- champ.DMP(beta = Mval_ts,
+                 pheno = ph_ts$pt_merge1,
+                 compare.group = NULL,
+                 adjPVal = 0.05,
+                 adjust.method = "BH",
+                 arraytype = "450K")
+gc()
+
+
+```
+
+```{r}
+save.image(imageDir)
+```
+
+```{r}
+DMP.GUI(DMP=DMP.mval.tg.merge$G3G4_to_G2,
+            beta=Mval,
+            pheno=ph$tumor_grade_merge1,
+            cutgroupnumber=4)
+```
+

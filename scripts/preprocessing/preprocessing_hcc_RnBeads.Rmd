@@ -1,0 +1,114 @@
+---
+title: "preprocessing_hcc"
+output: html_document
+date: "2024-01-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#0.Preparation
+```{r}
+library(RnBeads)
+#library(RnBeads.hg19)
+library(RnBeads.hg38)
+dir <-  getwd()
+dataDir <- file.path(dir, "data")
+idatDir <- file.path(dataDir, "sorted_idat")
+sampleSheet <- file.path(dataDir, "samplesheet_HCCNormal451.csv")
+dataSource <- c(idatDir, sampleSheet)
+resultDir <- file.path(dir, "results")
+reportDir <- file.path(resultDir, "report")
+imageDir <- file.path(dir, "RnBeads_hcc.RData")
+gc()
+```
+
+#0. COmputing management
+```{r}
+parallel.isEnabled()
+parallel.setup(2)
+parallel.isEnabled()
+#parallel.terdown()
+```
+
+```{r}
+# Directory where your data is located
+data.dir <- "C:/Users/dzakw/Downloads/Ziller2011_PLoSGen_450K/Ziller2011_PLoSGen_450K/dataset"
+idat.dir <- file.path(data.dir, "idat")
+sample.annotation <- file.path(data.dir, "sample_annotation.csv")
+data.source <- c(idat.dir, sample.annotation)
+rnb.set <- rnb.execute.import(data.source = data.source, data.type = "idat.dir")
+```
+
+
+#1.Import
+```{r}
+rnb <- rnb.execute.import(dataSource, data.type="infinium.idat.dir")
+
+```
+
+#2.Filter
+```{r}
+rnb.filtering <- rnb
+cat("Initial Probes: " ,nrow(meth(rnb.filtering))) # the number of sites in the unfiltered object
+cat("Initial Sample: " ,ncol(meth(rnb.filtering)))
+#.p-Value (optional)
+#any.bad.p.val <- apply(dpval(rnb.set.unfiltered)>0.01, 1, any)
+#rnb.set.unfiltered <- remove.sites(rnb.set.unfiltered, any.bad.p.val)
+#nsites(rnb.set.unfiltered)
+
+# 2.1 Remove probes outside of CpG context
+rnb.filterCpG <- rnb.execute.context.removal(rnb.filtering)
+rnb.filtering <- rnb.filterCpG$dataset
+cat("CpG Probes: " ,nrow(meth(rnb.filtering))) # the number of CpG sites in the unfiltered object
+
+# 2.2 SNP filtering allowing no SNPs in the probe sequence
+rnb.filterSNP<- rnb.execute.snp.removal(rnb.filtering, snp="any")
+rnb.filtering <- rnb.filterSNP$dataset
+cat("nonSNP Probes: " ,nrow(meth(rnb.filtering))) 
+
+# 2.3 Remove CpGs on sex chromosomes
+rnb.filterSex <- rnb.execute.sex.removal(rnb.filtering)
+rnb.filtering <- rnb.filterSex$dataset
+cat("nonSex Chromosome: " ,nrow(meth(rnb.filtering))) 
+
+# 2.4 Remove probes and samples based on a greedy approach
+greedycut <- rnb.execute.greedycut(rnb.filtering)
+rnb.filtering <- remove.samples(rnb.filtering, greedycut$samples) #filter samples
+rnb.filtering <- remove.sites(rnb.filtering, greedycut$sites)
+cat("greedycut probes: " ,nrow(meth(rnb.filtering))) 
+
+# 2.5 Remove probes containing NA for beta values
+rnb.filterNA <- rnb.execute.na.removal(rnb.filtering, threshold = 0.01)
+rnb.filtering <- rnb.filterNA$dataset
+cat("nonNA Probes: " ,nrow(meth(rnb.filtering))) 
+
+# 2.6 Remove probes for which the beta values have low standard deviation
+#rnb.filterSTD <- rnb.execute.variability.removal(rnb.filtering, 0.005)
+#rnb.filtering <- rnb.filterSTD$dataset
+#cat("nonVar Probes: " ,nrow(meth(rnb.filtering))) 
+
+# 2.7 Imputation
+#rnb.filtering <- rnb.execute.imputation(rnb.filtering,
+#                                           method = "knn",
+#                                           update.ff = TRUE)
+cat("Final Probes Count: " ,nrow(meth(rnb.filtering)))
+cat("Final Sample Count: " ,ncol(meth(rnb.filtering))) 
+save.image(imageDir)
+```
+
+#3.Normalization
+```{r}
+rnb.norm <- rnb.filtering
+rnb.norm <- rnb.execute.normalization(rnb.norm, method="bmiq",bgcorr.method="methylumi.noob")
+save.image(imageDir)
+```
+
+
+#4.Imputation
+```{r}
+rnb.norm.impute <- rnb.execute.imputation(rnb.norm, method = "knn", update.ff = TRUE)
+```
+
+

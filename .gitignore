@@ -1,0 +1,49 @@
+# ── R ──────────────────────────────────────────────────────────────────
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+*.rds
+
+# ── Python ─────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.env
+venv/
+env/
+
+# ── Large / binary model files ──────────────────────────────────────────
+*.idat
+*.IDAT
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+
+# ── Raw GSEA output ─────────────────────────────────────────────────────
+enplot_*
+gset_rnd_es_dist_*
+edb/
+*.edb
+GSEA_FINAL/
+GSEA_G*/
+GSEA_hipohiper/
+
+# ── Clinical / sensitive data ───────────────────────────────────────────
+Clinical_LIHC/clinical_record_lihc/
+*.PDF
+
+# ── OS / Editor ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp
+*~
+
+# ── Draft / temp files ──────────────────────────────────────────────────
+Untitled*.ipynb
+*Salinan*
+*Copy*
+*(2)*
+sort_test.ipynb

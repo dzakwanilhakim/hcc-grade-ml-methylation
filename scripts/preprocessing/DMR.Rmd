@@ -1,0 +1,29 @@
+---
+title: "DMR"
+output: html_document
+date: "2024-01-23"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#1. DMR finding, DMRCata
+```{r}
+DMR_PT.NT <- champ.DMR(beta=beta %>% as.data.frame(),
+              pheno=ph$Sample.Type,
+              compare.group=NULL,
+              arraytype="450K",
+              method = "DMRcate",
+              minProbes=7,
+              adjPvalDmr=0.05,
+              cores=2,
+              rmSNPCH=T,
+              fdr=0.05,
+              dist=2,
+              mafcut=0.05,
+              lambda=1000,
+              C=2)
+gc()
+```
+

@@ -1,0 +1,29 @@
+---
+title: "DMP"
+output: html_document
+date: "2024-01-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+``
+
+#4.imputation
+```{r}
+# 2.7 Imputation
+rnb.norm.impute <- rnb.execute.imputation(rnb.norm, method = "knn", update.ff = TRUE)
+```
+#5. SVA
+```{r}
+svaObj <- rnb.execute.sva(rnb.norm.impute, cmp.cols="Sample_Group", numSVmethod="be")
+rnbs.sva <- set.covariates.sva(rnb.norm.impute, svaObj)
+get.covariates.sva(rnbs.sva, "Sample_Group")
+```
+
+#6. DMP
+```{r}
+dm.sva <- rnb.execute.computeDiffMeth(rnbs.sva, "Sample_Group")
+```
+

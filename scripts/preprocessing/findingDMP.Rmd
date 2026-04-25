@@ -1,0 +1,66 @@
+---
+title: "findingDMP"
+output: html_document
+date: "2024-01-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#1. Preparation
+```{r}
+library(RnBeads.hg19)
+library(ChAMP)
+```
+
+#2. Annotarion
+```{r}
+# Annotation reference
+ann <- annotation(rnb.norm, add.names=TRUE)
+ph <- pheno(rnb.norm)
+beta <- meth(rnb.norm)
+Mval <- mval(rnb.norm)
+col <- ph$Sample_Name
+row <- ann$ID
+#CpG.GUI(row)
+
+# annotation
+colnames(beta) <- col
+rownames(beta) <- row
+colnames(Mval) <- col
+rownames(Mval) <- row
+save.image(imageDir)
+```
+
+#3. SVD
+```{r}
+#SVD for Mval
+svd.Mval <-  champ.SVD(beta = Mval %>% as.data.frame(),
+                  rgSet=NULL,
+                  pd=ph,
+                  RGEffect=FALSE,
+                  PDFplot=TRUE,
+                  Rplot=TRUE,
+                  resultsDir=resultDir)
+```
+
+#4. Batch effect correction
+```{r}
+#combat for Mval
+combat.Mval <- champ.runCombat(beta=Mval,pd=ph,
+                                         variablename = "Sample_Group",
+                                         batchname=c("Cell_Line"))
+
+```
+
+#5. DMP
+```{r}
+DMP.mval <- champ.DMP(beta = Mval,
+                 pheno = ph$Sample_Group,
+                 compare.group = NULL,
+                 adjPVal = 0.05,
+                 adjust.method = "BH",
+                 arraytype = "450K")
+```
+
