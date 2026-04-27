@@ -32,7 +32,7 @@ GSEA_hipohiper/
 
 # ── Clinical / sensitive data ───────────────────────────────────────────
 Clinical_LIHC/clinical_record_lihc/
-*.PDF
+
 
 # ── OS / Editor ─────────────────────────────────────────────────────────
 .DS_Store
